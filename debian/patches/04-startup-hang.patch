@@ -1,0 +1,48 @@
+commit ee6608eca034494fc2597b2990852adec236e486
+Author: Steve Grubb <sgrubb@redhat.com>
+Date:   Wed Jun 27 08:58:59 2018 -0400
+
+    Fix hang on startup
+
+Ubuntu note: removed the ChangeLog patch hunk
+Origin: upstream, https://github.com/linux-audit/audit-userspace/commit/ee6608eca034494fc2597b2990852adec236e486
+Bug-Debian: https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=962451
+Bug-Ubuntu: https://bugs.launchpad.net/ubuntu/+source/auditd/+bug/1848330
+Bug-Fedora: https://bugzilla.redhat.com/show_bug.cgi?id=1587995
+Last-Update: 2021-01-08
+diff --git a/src/auditd-dispatch.c b/src/auditd-dispatch.c
+index 9831c946..602b1a65 100644
+--- a/src/auditd-dispatch.c
++++ b/src/auditd-dispatch.c
+@@ -47,7 +47,6 @@ int dispatcher_pid(void)
+ 
+ void dispatcher_reaped(void)
+ {
+-	audit_msg(LOG_INFO, "dispatcher %d reaped", pid);
+ 	pid = 0;
+ 	shutdown_dispatcher();
+ }
+diff --git a/src/auditd.c b/src/auditd.c
+index 0082b716..b0952db1 100644
+--- a/src/auditd.c
++++ b/src/auditd.c
+@@ -388,7 +388,7 @@ static int become_daemon(void)
+ 	if (do_fork) {
+ 		if (pipe(init_pipe) || 
+ 				fcntl(init_pipe[0], F_SETFD, FD_CLOEXEC) ||
+-				fcntl(init_pipe[0], F_SETFD, FD_CLOEXEC))
++				fcntl(init_pipe[1], F_SETFD, FD_CLOEXEC))
+ 			return -1;
+ 		pid = fork();
+ 	} else
+@@ -432,7 +432,9 @@ static int become_daemon(void)
+ 			break;
+ 		default:
+ 			/* Wait for the child to say its done */
+-			rc = read(init_pipe[0], &status, sizeof(status));
++			do {
++				rc = read(init_pipe[0], &status,sizeof(status));
++			} while (rc < 0 && errno == EINTR);
+ 			if (rc < 0)
+ 				return -1;
+ 

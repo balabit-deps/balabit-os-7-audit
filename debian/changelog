@@ -1,3 +1,9 @@
+audit (1:2.8.2-1ubuntu1.1) bionic; urgency=medium
+
+  * d/p/04-startup-hang.patch: fix hang on startup (LP: #1848330)
+
+ -- Andreas Hasenack <andreas@canonical.com>  Fri, 08 Jan 2021 14:23:06 -0300
+
 audit (1:2.8.2-1ubuntu1) bionic; urgency=low
 
   * Merge from Debian unstable.  Remaining changes:
